@@ -6,15 +6,13 @@ import (
 )
 
 type GameHandler struct {
-	gs *games.GameService
+	gs games.GameService
 }
 
-func NewGameHandler(s *games.GameService) *GameHandler {
-	return &GameHandler{
-		gs: s,
-	}
+func NewGameHandler(gs games.GameService) GameHandler {
+	return GameHandler{gs: gs}
 }
 
-func (h *GameHandler) GetAll(c *gin.Context) {
+func (h GameHandler) GetAll(c *gin.Context) {
 	c.JSON(200, h.gs.GetAllGames(c.Request.Context()))
 }
