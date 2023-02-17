@@ -1,24 +1,36 @@
 package gamedb
 
 import (
+	"time"
+
 	"github.com/caiquetgr/go_gamereview/internal/domain/games"
-	"github.com/caiquetgr/go_gamereview/internal/platform/database"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
 
 type GameDbModel struct {
 	bun.BaseModel `bun:"table:games"`
-	Base          database.BaseDbModel `bun:",extend"`
-	Name          string               `bun:"name,notnull"`
-	Year          int                  `bun:"year,notnull"`
-	Platform      string               `bun:"platform,notnull"`
-	Genre         string               `bun:"genre,notnull"`
-	Publisher     string               `bun:"publisher,notnull"`
+	ID            uuid.UUID `bun:"id,pk"`
+	CreatedAt     time.Time `bun:",notnull,default:current_timestamp`
+	ModifiedAt    time.Time `bun:",notnull,default:current_timestamp`
+	Name          string    `bun:"name,notnull"`
+	Year          int       `bun:"year,notnull"`
+	Platform      string    `bun:"platform,notnull"`
+	Genre         string    `bun:"genre,notnull"`
+	Publisher     string    `bun:"publisher,notnull"`
+}
+
+func toGames(gs []GameDbModel) []games.Game {
+	games := make([]games.Game, len(gs))
+	for i, g := range gs {
+		games[i] = toGame(g)
+	}
+	return games
 }
 
 func toGame(g GameDbModel) games.Game {
 	return games.Game{
-		ID:        g.Base.ID,
+		ID:        g.ID,
 		Name:      g.Name,
 		Year:      g.Year,
 		Platform:  g.Platform,

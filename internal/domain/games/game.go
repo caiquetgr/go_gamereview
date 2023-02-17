@@ -5,7 +5,7 @@ import (
 )
 
 type Repository interface {
-	FindAll(ctx context.Context) []Game
+	FindAll(ctx context.Context, page int, pageSize int) ([]Game, bool, error)
 }
 
 type GameService struct {
@@ -18,6 +18,11 @@ func NewGameService(repo Repository) GameService {
 	}
 }
 
-func (s GameService) GetAllGames(ctx context.Context) []Game {
-	return s.repo.FindAll(ctx)
+func (s GameService) GetAllGames(ctx context.Context, page int, pageSize int) ([]Game, bool, error) {
+	games, hasNext, err := s.repo.FindAll(ctx, page, pageSize)
+
+	if err != nil {
+		return nil, false, err
+	}
+	return games, hasNext, err
 }
