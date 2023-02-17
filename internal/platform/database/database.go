@@ -1,13 +1,18 @@
 package database
 
 import (
+	"context"
 	"crypto/tls"
 	"database/sql"
+	"embed"
+	"log"
+	"runtime"
 	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/migrate"
 )
 
 type DbConfig struct {
@@ -34,6 +39,9 @@ func OpenConnection(cfg DbConfig) *bun.DB {
 	)
 
 	sqlDb := sql.OpenDB(pgconn)
+	maxOpenConns := 4 * runtime.GOMAXPROCS(0)
+	sqlDb.SetMaxOpenConns(maxOpenConns)
+	sqlDb.SetMaxIdleConns(maxOpenConns)
 
 	db := bun.NewDB(sqlDb, pgdialect.New())
 
@@ -44,4 +52,34 @@ func OpenConnection(cfg DbConfig) *bun.DB {
 	}
 
 	return db
+}
+
+//go:embed migrations/*.sql
+var sqlMigrations embed.FS
+
+func Migrate(ctx context.Context, db *bun.DB) error {
+
+	migrations := migrate.NewMigrations()
+	err := migrations.Discover(sqlMigrations)
+
+	if err != nil {
+		return err
+	}
+
+	migrator := migrate.NewMigrator(db, migrations)
+
+	migrator.Lock(ctx)
+	defer migrator.Unlock(ctx)
+
+	group, err := migrator.Migrate(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if group.ID == 0 {
+		log.Println("no new migrations to run")
+	}
+
+	return nil
 }

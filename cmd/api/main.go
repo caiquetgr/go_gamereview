@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
 	db := database.OpenConnection(database.DbConfig{
 		Host:            "localhost:5432",
 		User:            "postgres",
@@ -22,6 +24,11 @@ func main() {
 		Database:        "gamereview",
 		ApplicationName: "go_gamereview",
 	})
+
+	err := database.Migrate(ctx, db)
+	if err != nil {
+		panic(err)
+	}
 
 	rtr := web.Handlers(web.ApiConfig{
 		DB: db,
