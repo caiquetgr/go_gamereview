@@ -3,17 +3,29 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/caiquetgr/go_gamereview/cmd/api/web"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/caiquetgr/go_gamereview/cmd/api/web"
+	"github.com/caiquetgr/go_gamereview/internal/platform/database"
 )
 
 func main() {
-	rtr := web.Handlers()
+	db := database.OpenConnection(database.DbConfig{
+		Host:            "localhost:5432",
+		User:            "postgres",
+		Password:        "postgres",
+		Database:        "gamereview",
+		ApplicationName: "go_gamereview",
+	})
+
+	rtr := web.Handlers(web.ApiConfig{
+		DB: db,
+	})
 
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -50,6 +62,6 @@ func main() {
 			log.Println("server shutdown timed out")
 		}
 
-		log.Println("server existing")
+		log.Println("server exiting")
 	}
 }

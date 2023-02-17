@@ -1,0 +1,25 @@
+version: '3'
+networks:
+  go_gamereview:
+    driver: bridge
+services:
+  db:
+    container_name: postgres_gamereview  
+    image: postgres:15.2-alpine
+    environment:
+      - POSTGRES_DB=gamereview
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - go_gamereview
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - 8181:8080
+    networks:
+      - go_gamereview

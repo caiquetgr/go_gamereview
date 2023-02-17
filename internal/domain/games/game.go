@@ -4,11 +4,15 @@ import (
 	"context"
 )
 
-type GameService struct {
-	repo GameRepository
+type Repository interface {
+	FindAll(ctx context.Context) []Game
 }
 
-func NewGameService(repo GameRepository) GameService {
+type GameService struct {
+	repo Repository
+}
+
+func NewGameService(repo Repository) GameService {
 	return GameService{
 		repo: repo,
 	}
