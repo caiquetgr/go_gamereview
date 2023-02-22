@@ -67,6 +67,7 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 	}
 
 	migrator := migrate.NewMigrator(db, migrations)
+	migrator.Init(ctx)
 
 	migrator.Lock(ctx)
 	defer migrator.Unlock(ctx)
