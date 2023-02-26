@@ -35,3 +35,20 @@ func (h GameHandler) GetAll(c *gin.Context) {
 		})
 	}
 }
+
+func (h GameHandler) Create(c *gin.Context) {
+	var newGame games.NewGame
+
+	if err := c.ShouldBindJSON(&newGame); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"bad request": err.Error()})
+		return
+	}
+
+	game, err := h.gs.CreateGame(c.Request.Context(), newGame)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusCreated, game)
+	}
+}

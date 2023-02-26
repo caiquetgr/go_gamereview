@@ -10,3 +10,11 @@ type Game struct {
 	Genre     string
 	Publisher string
 }
+
+type NewGame struct {
+	Name      string
+	Year      int
+	Platform  string
+	Genre     string
+	Publisher string
+}

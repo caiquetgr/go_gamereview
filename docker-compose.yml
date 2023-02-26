@@ -14,12 +14,14 @@ services:
       - "5432:5432"
     networks:
       - go_gamereview
-  adminer:
-    image: adminer
-    restart: always
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "caique@gmail.com"
+      PGADMIN_DEFAULT_PASSWORD: "caique"
+    ports:
+      - "16543:80"
     depends_on:
       - db
-    ports:
-      - 8181:8080
     networks:
       - go_gamereview

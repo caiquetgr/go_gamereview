@@ -38,3 +38,13 @@ func (gr GameRepositoryBun) FindAll(ctx context.Context, page int, pageSize int)
 
 	return toGames(games), hasNext, nil
 }
+
+func (gr GameRepositoryBun) Create(ctx context.Context, g *games.Game) (*games.Game, error) {
+	_, err := gr.db.NewInsert().Model(g).Exec(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return g, nil
+}

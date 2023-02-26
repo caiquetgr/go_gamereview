@@ -1,6 +1,6 @@
 module github.com/caiquetgr/go_gamereview
 
-go 1.19
+go 1.20
 
 require (
 	github.com/gin-gonic/gin v1.8.2
@@ -24,7 +24,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
-	github.com/uptrace/bun v1.1.10 // indirect
+	github.com/uptrace/bun v1.1.10
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect

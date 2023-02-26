@@ -20,4 +20,5 @@ func Handle(ge *gin.Engine, cfg ApiConfig) {
 	)
 
 	g.GET("/games", gh.GetAll)
+	g.POST("/games", gh.Create)
 }
