@@ -25,6 +25,7 @@ func main() {
 		Database:        "gamereview",
 		ApplicationName: "go_gamereview",
 	})
+	defer db.Close()
 
 	err := database.Migrate(ctx, db)
 	if err != nil {
@@ -32,6 +33,7 @@ func main() {
 	}
 
 	kp := kafka.CreateKafkaProducer()
+	defer kp.Close()
 
 	rtr := web.Handlers(web.ApiConfig{
 		DB:            db,
