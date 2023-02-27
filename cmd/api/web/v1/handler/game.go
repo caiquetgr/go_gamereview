@@ -52,3 +52,20 @@ func (h GameHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusCreated, game)
 	}
 }
+
+func (h GameHandler) CreateAsync(c *gin.Context) {
+	var newGame games.NewGame
+
+	if err := c.ShouldBindJSON(&newGame); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"bad request": err.Error()})
+		return
+	}
+
+	err := h.gs.SendCreateGameEvent(c.Request.Context(), newGame)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	} else {
+		c.Status(http.StatusAccepted)
+	}
+}

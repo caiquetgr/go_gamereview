@@ -12,9 +12,9 @@ type Game struct {
 }
 
 type NewGame struct {
-	Name      string
-	Year      int
-	Platform  string
-	Genre     string
-	Publisher string
+	Name      string `json:"name"`
+	Year      int    `json:"year"`
+	Platform  string `json:"platform"`
+	Genre     string `json:"genre"`
+	Publisher string `json:"publisher"`
 }

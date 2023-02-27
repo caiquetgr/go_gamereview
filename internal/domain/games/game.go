@@ -11,13 +11,19 @@ type Repository interface {
 	Create(ctx context.Context, g *Game) (*Game, error)
 }
 
-type GameService struct {
-	repo Repository
+type EventProducer interface {
+	CreateGameEvent(ctx context.Context, ng NewGame) error
 }
 
-func NewGameService(repo Repository) GameService {
+type GameService struct {
+	repo Repository
+	ev   EventProducer
+}
+
+func NewGameService(repo Repository, ev EventProducer) GameService {
 	return GameService{
 		repo: repo,
+		ev:   ev,
 	}
 }
 
@@ -44,4 +50,8 @@ func (s GameService) CreateGame(ctx context.Context, ng NewGame) (*Game, error) 
 	}
 
 	return s.repo.Create(ctx, &g)
+}
+
+func (s GameService) SendCreateGameEvent(ctx context.Context, ng NewGame) error {
+	return s.ev.CreateGameEvent(ctx, ng)
 }

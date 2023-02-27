@@ -12,6 +12,7 @@ import (
 
 	"github.com/caiquetgr/go_gamereview/cmd/api/web"
 	"github.com/caiquetgr/go_gamereview/internal/platform/database"
+	"github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
 )
 
 func main() {
@@ -30,8 +31,11 @@ func main() {
 		panic(err)
 	}
 
+	kp := kafka.CreateKafkaProducer()
+
 	rtr := web.Handlers(web.ApiConfig{
-		DB: db,
+		DB:            db,
+		KafkaProducer: kp,
 	})
 
 	srv := &http.Server{
