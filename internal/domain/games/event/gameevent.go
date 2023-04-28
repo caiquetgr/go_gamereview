@@ -23,7 +23,6 @@ func NewGameEventProducer(topic string, p *kafka.Producer) GameEventProducer {
 
 func (ge GameEventProducer) CreateGameEvent(ctx context.Context, ng games.NewGame) error {
 	bytes, err := json.Marshal(ng)
-
 	if err != nil {
 		return err
 	}

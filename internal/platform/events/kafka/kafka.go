@@ -9,8 +9,8 @@ import (
 func CreateKafkaProducer() *kafka.Producer {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": "localhost:9092",
+		"acks":              "all",
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -29,4 +29,17 @@ func CreateKafkaProducer() *kafka.Producer {
 	}()
 
 	return p
+}
+
+func CreateKafkaConsumer() *kafka.Consumer {
+	c, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers": "localhost:9092",
+		"group.id":          "go_gamereview",
+		"auto.offset.reset": "earliest",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return c
 }

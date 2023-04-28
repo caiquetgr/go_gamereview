@@ -8,7 +8,7 @@ require (
 	github.com/uptrace/bun/driver/pgdriver v1.1.10
 )
 
-require github.com/confluentinc/confluent-kafka-go/v2 v2.0.2 // indirect
+require github.com/confluentinc/confluent-kafka-go/v2 v2.0.2
 
 require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
