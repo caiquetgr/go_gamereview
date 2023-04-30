@@ -14,6 +14,10 @@ import (
 	"github.com/uptrace/bun"
 )
 
+const (
+	newGameTopic = "new-game-event"
+)
+
 type KafkaHandlerConfig struct {
 	DB                  *bun.DB
 	KafkaProducer       *kafka.Producer
@@ -23,20 +27,22 @@ type KafkaHandlerConfig struct {
 
 func Handle(cfg KafkaHandlerConfig) {
 	c := cfg.KafkaConsumerCreate()
+	defer c.Close()
 
-	err := c.SubscribeTopics([]string{"new-game-event"}, nil)
+	err := c.SubscribeTopics([]string{newGameTopic}, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	gs := games.NewGameService(
 		gamedb.NewGameRepositoryBun(cfg.DB),
-		event.NewGameEventProducer("new-game-event", cfg.KafkaProducer),
+		event.NewGameEventProducer(newGameTopic, cfg.KafkaProducer),
 	)
 
 	run := true
 
 	log.Println("starting consumer...")
+
 	for run {
 		select {
 		case sig := <-cfg.SigChan:

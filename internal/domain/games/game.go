@@ -30,7 +30,6 @@ func NewGameService(repo Repository, ev EventProducer) GameService {
 func (s GameService) GetAllGames(ctx context.Context, page int, pageSize int) ([]Game, bool, error) {
 	// TODO: create page struct
 	games, hasNext, err := s.repo.FindAll(ctx, page, pageSize)
-
 	if err != nil {
 		return nil, false, err
 	}

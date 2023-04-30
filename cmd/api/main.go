@@ -70,10 +70,8 @@ func main() {
 			srv.Close()
 		}
 
-		select {
-		case <-ctx.Done():
-			log.Println("server shutdown timed out")
-		}
+		<-ctx.Done()
+		log.Println("server shutdown timed out")
 
 		log.Println("server exiting")
 	}
