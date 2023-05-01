@@ -46,7 +46,6 @@ func OpenConnection(cfg DbConfig) *bun.DB {
 	db := bun.NewDB(sqlDb, pgdialect.New())
 
 	_, err := db.Exec("SELECT 1")
-
 	if err != nil {
 		panic("error connecting to database - " + err.Error())
 	}
@@ -58,10 +57,8 @@ func OpenConnection(cfg DbConfig) *bun.DB {
 var sqlMigrations embed.FS
 
 func Migrate(ctx context.Context, db *bun.DB) error {
-
 	migrations := migrate.NewMigrations()
 	err := migrations.Discover(sqlMigrations)
-
 	if err != nil {
 		return err
 	}
@@ -73,7 +70,6 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 	defer migrator.Unlock(ctx)
 
 	group, err := migrator.Migrate(ctx)
-
 	if err != nil {
 		return err
 	}
