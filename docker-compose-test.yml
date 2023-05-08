@@ -16,7 +16,7 @@ services:
       - go_gamereview
     healthcheck:
       test: "pg_isready -U postgres -d gamereview"
-      start_period: 3s
+      start_period: 2s
       interval: 2s
       timeout: 3s
       retries: 5
@@ -29,11 +29,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     healthcheck:
-      test: nc -z localhost 2181 || exit -1
-      interval: 4s
-      timeout: 5s
+      test: "nc -z localhost 2181 || exit -1"
+      interval: 3s
+      timeout: 10s
       retries: 5
-      start_period: 7s
+      start_period: 3s
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
@@ -52,10 +52,10 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     healthcheck:
-      test: nc-z localhost 9092 || exit -1"
-      start_period: 7s
-      interval: 5s
-      timeout: 5s
+      test: "nc -z localhost 9092 || exit -1"
+      start_period: 3s
+      interval: 2s
+      timeout: 10s
       retries: 5
 
   init-kafka-topics:

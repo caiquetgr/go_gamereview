@@ -14,6 +14,13 @@ services:
       - "5432:5432"
     networks:
       - go_gamereview
+    healthcheck:
+      test: "pg_isready -U postgres -d gamereview"
+      start_period: 2s
+      interval: 2s
+      timeout: 3s
+      retries: 5
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -33,13 +40,20 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: "nc -z localhost 2181 || exit -1"
+      interval: 3s
+      timeout: 10s
+      retries: 5
+      start_period: 3s
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
     networks: 
       - go_gamereview
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - 9092:9092
     environment:
@@ -49,13 +63,20 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: "nc -z localhost 9092 || exit -1"
+      start_period: 3s
+      interval: 2s
+      timeout: 10s
+      retries: 5
 
   init-kafka-topics:
     image: confluentinc/cp-kafka:7.3.2
     networks: 
       - go_gamereview
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
