@@ -9,7 +9,11 @@ require (
 	github.com/uptrace/bun/driver/pgdriver v1.1.10
 )
 
-require github.com/confluentinc/confluent-kafka-go/v2 v2.0.2
+require (
+	github.com/confluentinc/confluent-kafka-go/v2 v2.0.2
+	github.com/stretchr/testify v1.8.2
+	github.com/testcontainers/testcontainers-go/modules/compose v0.19.0
+)
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6 // indirect
@@ -65,8 +69,10 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
@@ -114,8 +120,6 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
-	github.com/testcontainers/testcontainers-go/modules/compose v0.19.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tilt-dev/fsnotify v1.4.8-0.20220602155310-fff9c274a375 // indirect
 	github.com/tonistiigi/fsutil v0.0.0-20230105215944-fb433841cbfa // indirect
@@ -183,4 +187,17 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	mellium.im/sasl v0.3.1 // indirect
+)
+
+replace (
+	github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
+
+	// For k8s dependencies, we use a replace directive, to prevent them being
+	// upgraded to the version specified in containerd, which is not relevant to the
+	// version needed.
+	// See https://github.com/docker/buildx/pull/948 for details.
+	// https://github.com/docker/buildx/blob/v0.8.1/go.mod#L62-L64
+	k8s.io/api => k8s.io/api v0.22.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
+	k8s.io/client-go => k8s.io/client-go v0.22.4
 )

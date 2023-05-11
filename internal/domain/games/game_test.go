@@ -1,18 +1,16 @@
 package games
 
 import (
-	"fmt"
 	"testing"
+	"time"
 
-	"github.com/caiquetgr/go_gamereview/internal/platform/database/dbtest"
+	"github.com/caiquetgr/go_gamereview/foundation/test"
 )
 
-func TestMain(m *testing.M) {
-	c, err := dbtest.StartDB()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer dbtest.StopDB(c)
-	m.Run()
+func Test_Game(t *testing.T) {
+	t.Log("running!")
+	test.InitDependencies(t)
+	t.Log("test running!")
+	time.Sleep(10 * time.Second)
+	t.Log("test ended!")
 }
