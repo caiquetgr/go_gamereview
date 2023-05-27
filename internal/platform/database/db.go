@@ -29,7 +29,7 @@ func OpenConnection(cfg DbConfig) *bun.DB {
 		pgdriver.WithPassword(cfg.Password),
 		pgdriver.WithApplicationName(cfg.ApplicationName),
 		pgdriver.WithAddr(cfg.Host),
-		pgdriver.WithDatabase("gamereview"),
+		pgdriver.WithDatabase(cfg.Database),
 		pgdriver.WithTimeout(3*time.Second),
 		pgdriver.WithDialTimeout(3*time.Second),
 		pgdriver.WithReadTimeout(3*time.Second),

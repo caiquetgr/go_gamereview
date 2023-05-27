@@ -15,15 +15,59 @@ import (
 	"github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
 )
 
-func main() {
-	ctx := context.Background()
+type DbConfig struct {
+	Host            string
+	User            string
+	Password        string
+	Database        string
+	ApplicationName string
+}
 
+type KafkaProducerConfig struct {
+	BootstrapServers string
+	Acks             string
+}
+
+type HttpServerConfig struct {
+	Addr string
+}
+
+type AppConfig struct {
+	DbConfig         DbConfig
+	KPConfig         KafkaProducerConfig
+	HttpServerConfig HttpServerConfig
+	AppReadyChan     chan struct{}
+}
+
+func main() {
+	appConfig := AppConfig{
+		DbConfig: DbConfig{
+			Host:            "localhost:5432",
+			User:            "postgres",
+			Password:        "postgres",
+			Database:        "gamereview",
+			ApplicationName: "go_gamereview",
+		},
+		KPConfig: KafkaProducerConfig{
+			BootstrapServers: "localhost:9092",
+			Acks:             "all",
+		},
+		HttpServerConfig: HttpServerConfig{
+			Addr: ":8080",
+		},
+		AppReadyChan: make(chan struct{}),
+	}
+
+	Run(context.Background(), appConfig)
+}
+
+func Run(ctx context.Context, appConfig AppConfig) {
 	db := database.OpenConnection(database.DbConfig{
-		Host:            "localhost:5432",
-		User:            "postgres",
-		Password:        "postgres",
-		Database:        "gamereview",
-		ApplicationName: "go_gamereview",
+		Host:            appConfig.DbConfig.Host,
+		User:            appConfig.DbConfig.User,
+		Password:        appConfig.DbConfig.Password,
+		Database:        appConfig.DbConfig.Database,
+		ApplicationName: appConfig.DbConfig.ApplicationName,
 	})
 	defer db.Close()
 
@@ -32,7 +76,10 @@ func main() {
 		panic(err)
 	}
 
-	kp := kafka.CreateKafkaProducer()
+	kp := kafka.CreateKafkaProducer(kafka.ProducerConfig{
+		BootstrapServers: appConfig.KPConfig.BootstrapServers,
+		Acks:             appConfig.KPConfig.Acks,
+	})
 	defer kp.Close()
 
 	rtr := web.Handlers(web.ApiConfig{
@@ -41,7 +88,7 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    appConfig.HttpServerConfig.Addr,
 		Handler: rtr,
 	}
 
@@ -54,6 +101,7 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	close(appConfig.AppReadyChan)
 
 	select {
 	case err := <-srvErrors:
@@ -72,7 +120,6 @@ func main() {
 
 		<-ctx.Done()
 		log.Println("server shutdown timed out")
-
 		log.Println("server exiting")
 	}
 }

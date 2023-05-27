@@ -28,7 +28,10 @@ func main() {
 		panic(err)
 	}
 
-	kp := kafkafactory.CreateKafkaProducer()
+	kp := kafkafactory.CreateKafkaProducer(kafkafactory.ProducerConfig{
+		BootstrapServers: "localhost:9092",
+		Acks:             "all",
+	})
 	defer kp.Close()
 
 	kcCreator := kafkafactory.CreateKafkaConsumer

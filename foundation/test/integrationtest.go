@@ -2,38 +2,50 @@ package test
 
 import (
 	"context"
-	"testing"
+	"fmt"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 const (
-	dcFile = "../../../docker-compose-test.yml"
+	dcFile          = "../../../docker-compose-test.yml"
+	DatabaseService = "db"
+	KafkaService    = "kafka"
 )
 
-func InitDependencies(ctx context.Context, t *testing.T) map[string]*testcontainers.DockerContainer {
+func InitDependencies(ctx context.Context) (tc.ComposeStack, error) {
 	comp, err := tc.NewDockerCompose(dcFile)
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	if err != nil {
+		return nil, err
+	}
 
-	t.Cleanup(func() {
-		assert.NoError(t, comp.Down(ctx), "compose.Down()")
-	})
+	err = comp.Up(ctx, tc.Wait(true))
+	if err != nil {
+		return nil, err
+	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	t.Cleanup(cancel)
+	return comp, nil
+}
 
-	assert.NoError(t, comp.Up(ctx, tc.Wait(true)), "compose.Up()")
-
+func GetContainers(ctx context.Context, comp tc.ComposeStack) (map[string]*testcontainers.DockerContainer, error) {
 	services := comp.Services()
 	containers := make(map[string]*testcontainers.DockerContainer)
 
 	for _, s := range services {
 		c, err := comp.ServiceContainer(ctx, s)
-		assert.NoError(t, err, "ServiceContainer()")
+		if err != nil {
+			return nil, err
+		}
 		containers[s] = c
 	}
 
-	return containers
+	return containers, nil
+}
+
+func GetContainerAddress(ctx context.Context, c testcontainers.Container, containerPort string) string {
+	host, _ := c.Host(ctx)
+	port, _ := c.MappedPort(ctx, nat.Port(containerPort))
+	return fmt.Sprintf("%s:%s", host, port.Port())
 }

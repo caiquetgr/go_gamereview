@@ -6,10 +6,15 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func CreateKafkaProducer() *kafka.Producer {
+type ProducerConfig struct {
+	BootstrapServers string
+	Acks             string
+}
+
+func CreateKafkaProducer(kpc ProducerConfig) *kafka.Producer {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		"acks":              "all",
+		"bootstrap.servers": kpc.BootstrapServers,
+		"acks":              kpc.Acks,
 	})
 	if err != nil {
 		panic(err)
