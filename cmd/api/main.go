@@ -37,6 +37,7 @@ type AppConfig struct {
 	KPConfig         KafkaProducerConfig
 	HttpServerConfig HttpServerConfig
 	AppReadyChan     chan struct{}
+	AppStopChan      chan struct{}
 }
 
 func main() {
@@ -56,18 +57,23 @@ func main() {
 			Addr: ":8080",
 		},
 		AppReadyChan: make(chan struct{}),
+		AppStopChan:  make(chan struct{}),
 	}
 
 	Run(context.Background(), appConfig)
 }
 
-func Run(ctx context.Context, appConfig AppConfig) {
+func Run(ctx context.Context, cfg AppConfig) {
+	defer func() {
+		cfg.AppStopChan <- struct{}{}
+	}()
+
 	db := database.OpenConnection(database.DbConfig{
-		Host:            appConfig.DbConfig.Host,
-		User:            appConfig.DbConfig.User,
-		Password:        appConfig.DbConfig.Password,
-		Database:        appConfig.DbConfig.Database,
-		ApplicationName: appConfig.DbConfig.ApplicationName,
+		Host:            cfg.DbConfig.Host,
+		User:            cfg.DbConfig.User,
+		Password:        cfg.DbConfig.Password,
+		Database:        cfg.DbConfig.Database,
+		ApplicationName: cfg.DbConfig.ApplicationName,
 	})
 	defer db.Close()
 
@@ -77,8 +83,8 @@ func Run(ctx context.Context, appConfig AppConfig) {
 	}
 
 	kp := kafka.CreateKafkaProducer(kafka.ProducerConfig{
-		BootstrapServers: appConfig.KPConfig.BootstrapServers,
-		Acks:             appConfig.KPConfig.Acks,
+		BootstrapServers: cfg.KPConfig.BootstrapServers,
+		Acks:             cfg.KPConfig.Acks,
 	})
 	defer kp.Close()
 
@@ -88,7 +94,7 @@ func Run(ctx context.Context, appConfig AppConfig) {
 	})
 
 	srv := &http.Server{
-		Addr:    appConfig.HttpServerConfig.Addr,
+		Addr:    cfg.HttpServerConfig.Addr,
 		Handler: rtr,
 	}
 
@@ -99,27 +105,34 @@ func Run(ctx context.Context, appConfig AppConfig) {
 		srvErrors <- srv.ListenAndServe()
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	close(appConfig.AppReadyChan)
+	quitSignal := make(chan os.Signal, 1)
+	signal.Notify(quitSignal, syscall.SIGINT, syscall.SIGTERM)
+
+	close(cfg.AppReadyChan)
 
 	select {
 	case err := <-srvErrors:
 		log.Fatal(fmt.Errorf("server error: %w", err))
 
-	case sig := <-quit:
+	case sig := <-quitSignal:
 		log.Println("Server shutting down with signal", sig)
+		stop(srv, cfg)
 
-		ctx, canc := context.WithTimeout(context.Background(), 5*time.Second)
-		defer canc()
-
-		if err := srv.Shutdown(ctx); err != nil {
-			log.Fatal("Server shutdown:", err)
-			srv.Close()
-		}
-
-		<-ctx.Done()
-		log.Println("server shutdown timed out")
-		log.Println("server exiting")
+	case <-cfg.AppStopChan:
+		log.Println("Server shutting down app stop command")
+		stop(srv, cfg)
 	}
+}
+
+func stop(srv *http.Server, cfg AppConfig) {
+	ctx, canc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer canc()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server shutdown error:", err)
+		srv.Close()
+	}
+
+	<-ctx.Done()
+	log.Println("server finished")
 }

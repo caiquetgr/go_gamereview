@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	dcFile          = "../../../docker-compose-test.yml"
+	dcFile          = "../../docker-compose-test.yml"
 	DatabaseService = "db"
 	KafkaService    = "kafka"
 )

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"testing"
 	"time"
 
@@ -12,22 +13,40 @@ import (
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 	comp, err := test.InitDependencies(ctx)
-	defer comp.Down(ctx)
-	if err != nil {
-		panic(err)
-	}
-
 	if err != nil {
 		panic(err)
 	}
 
 	appConfig := buildAppConfig(ctx, comp)
-	ctxTimeout, canc := context.WithTimeout(context.Background(), 5*time.Second)
-	defer canc()
 
 	go func() {
 		Run(ctx, appConfig)
 	}()
+
+	select {
+	case <-time.After(10 * time.Second):
+		panic("Timedout waiting App start")
+	case <-appConfig.AppReadyChan:
+		log.Println("App ready for integration tests")
+	}
+
+	m.Run()
+
+	appConfig.AppStopChan <- struct{}{}
+
+	select {
+	case <-time.After(10 * time.Second):
+		panic("Timedout waiting App stop")
+	case <-appConfig.AppStopChan:
+		log.Println("App shutdown for integration tests")
+	}
+
+	close(appConfig.AppStopChan)
+
+	err = comp.Down(ctx)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func buildAppConfig(ctx context.Context, comp compose.ComposeStack) AppConfig {
@@ -58,5 +77,12 @@ func buildAppConfig(ctx context.Context, comp compose.ComposeStack) AppConfig {
 			Addr: ":8080",
 		},
 		AppReadyChan: make(chan struct{}),
+		AppStopChan:  make(chan struct{}),
 	}
+}
+
+func TestMain_IsTestWorking(t *testing.T) {
+	t.Log("starting test")
+	time.Sleep(3 * time.Second)
+	t.Log("finished test")
 }
