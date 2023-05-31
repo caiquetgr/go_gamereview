@@ -83,6 +83,6 @@ func buildAppConfig(ctx context.Context, comp compose.ComposeStack) AppConfig {
 
 func TestMain_IsTestWorking(t *testing.T) {
 	t.Log("starting test")
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 	t.Log("finished test")
 }
