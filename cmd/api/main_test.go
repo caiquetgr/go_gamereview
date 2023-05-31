@@ -2,12 +2,20 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/caiquetgr/go_gamereview/foundation/test"
 	"github.com/testcontainers/testcontainers-go/modules/compose"
+)
+
+const (
+	HttpServerPort = ":8080"
+	HttpServerPath = "http://localhost%s"
 )
 
 func TestMain(m *testing.M) {
@@ -74,7 +82,7 @@ func buildAppConfig(ctx context.Context, comp compose.ComposeStack) AppConfig {
 			Acks:             "all",
 		},
 		HttpServerConfig: HttpServerConfig{
-			Addr: ":8080",
+			Addr: HttpServerPort,
 		},
 		AppReadyChan: make(chan struct{}),
 		AppStopChan:  make(chan struct{}),
@@ -83,6 +91,24 @@ func buildAppConfig(ctx context.Context, comp compose.ComposeStack) AppConfig {
 
 func TestMain_IsTestWorking(t *testing.T) {
 	t.Log("starting test")
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	t.Log("finished test")
+}
+
+func TestGetGamesEndpoint(t *testing.T) {
+	res, err := http.Get(fmt.Sprintf("http://localhost%s/v1/games", HttpServerPort))
+	if err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+
+	games, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+
+	t.Logf("%s", games)
 }
