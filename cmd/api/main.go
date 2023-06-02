@@ -10,64 +10,34 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/caiquetgr/go_gamereview/cmd/api/config"
 	"github.com/caiquetgr/go_gamereview/cmd/api/web"
 	"github.com/caiquetgr/go_gamereview/internal/platform/database"
 	"github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
 )
 
-type DbConfig struct {
-	Host            string
-	User            string
-	Password        string
-	Database        string
-	ApplicationName string
-}
-
-type KafkaProducerConfig struct {
-	BootstrapServers string
-	Acks             string
-}
-
-type HttpServerConfig struct {
-	Addr string
-}
-
-type AppConfig struct {
-	DbConfig         DbConfig
-	KPConfig         KafkaProducerConfig
-	HttpServerConfig HttpServerConfig
-	AppReadyChan     chan struct{}
-	AppStopChan      chan struct{}
-}
-
 func main() {
-	appConfig := AppConfig{
-		DbConfig: DbConfig{
+	appConfig := config.AppConfig{
+		DbConfig: config.DbConfig{
 			Host:            "localhost:5432",
 			User:            "postgres",
 			Password:        "postgres",
 			Database:        "gamereview",
 			ApplicationName: "go_gamereview",
 		},
-		KPConfig: KafkaProducerConfig{
+		KPConfig: config.KafkaProducerConfig{
 			BootstrapServers: "localhost:9092",
 			Acks:             "all",
 		},
-		HttpServerConfig: HttpServerConfig{
+		HttpServerConfig: config.HttpServerConfig{
 			Addr: ":8080",
 		},
-		AppReadyChan: make(chan struct{}),
-		AppStopChan:  make(chan struct{}),
 	}
 
 	Run(context.Background(), appConfig)
 }
 
-func Run(ctx context.Context, cfg AppConfig) {
-	defer func() {
-		cfg.AppStopChan <- struct{}{}
-	}()
-
+func Run(ctx context.Context, cfg config.AppConfig) {
 	db := database.OpenConnection(database.DbConfig{
 		Host:            cfg.DbConfig.Host,
 		User:            cfg.DbConfig.User,
@@ -108,23 +78,17 @@ func Run(ctx context.Context, cfg AppConfig) {
 	quitSignal := make(chan os.Signal, 1)
 	signal.Notify(quitSignal, syscall.SIGINT, syscall.SIGTERM)
 
-	close(cfg.AppReadyChan)
-
 	select {
 	case err := <-srvErrors:
 		log.Fatal(fmt.Errorf("server error: %w", err))
 
 	case sig := <-quitSignal:
 		log.Println("Server shutting down with signal", sig)
-		stop(srv, cfg)
-
-	case <-cfg.AppStopChan:
-		log.Println("Server shutting down app stop command")
-		stop(srv, cfg)
+		stop(srv)
 	}
 }
 
-func stop(srv *http.Server, cfg AppConfig) {
+func stop(srv *http.Server) {
 	ctx, canc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer canc()
 

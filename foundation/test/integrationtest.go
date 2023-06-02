@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/caiquetgr/go_gamereview/cmd/api/config"
+	"github.com/caiquetgr/go_gamereview/internal/platform/database"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
+	"github.com/uptrace/bun"
+	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 const (
@@ -14,6 +18,12 @@ const (
 	DatabaseService = "db"
 	KafkaService    = "kafka"
 )
+
+type AppIntegrationTest struct {
+	Db       *bun.DB
+	Kp       *kafka.Producer
+	Teardown func()
+}
 
 func InitDependencies(ctx context.Context) (tc.ComposeStack, error) {
 	comp, err := tc.NewDockerCompose(dcFile)
@@ -48,4 +58,21 @@ func GetContainerAddress(ctx context.Context, c testcontainers.Container, contai
 	host, _ := c.Host(ctx)
 	port, _ := c.MappedPort(ctx, nat.Port(containerPort))
 	return fmt.Sprintf("%s:%s", host, port.Port())
+}
+
+func NewIntegrationTest(cfg config.AppConfig) {
+	db := database.OpenConnection(database.DbConfig{
+		Host:            cfg.DbConfig.Host,
+		User:            cfg.DbConfig.User,
+		Password:        cfg.DbConfig.Password,
+		Database:        cfg.DbConfig.Database,
+		ApplicationName: cfg.DbConfig.ApplicationName,
+	})
+
+  return AppIntegrationTest{
+  	Db: db,
+  	Kp: new(invalid type),
+  	Teardown: func() {
+  	},
+  }
 }
