@@ -10,30 +10,25 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
-const (
-	HttpServerPort    = ":8080"
-	HttpServerAddress = "http://localhost"
-)
-
 var comp compose.ComposeStack
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	comp, err := test.InitDependencies(ctx)
+	var err error
+	comp, err = test.InitDependencies(ctx)
+
 	if err != nil {
 		panic(err)
 	}
+
+	defer func() {
+		err := comp.Down(ctx)
+		if err != nil {
+			fmt.Printf("Failed to shutdown docker-compose: %v", err)
+		}
+	}()
 
 	m.Run()
-
-	err = comp.Down(ctx)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func getServerUrl() string {
-	return fmt.Sprintf("%s%s", HttpServerAddress, HttpServerPort)
 }
 
 func TestMain_IsTestWorking(t *testing.T) {

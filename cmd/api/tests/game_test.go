@@ -2,17 +2,13 @@ package tests
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/caiquetgr/go_gamereview/cmd/api/config"
 	"github.com/caiquetgr/go_gamereview/cmd/api/web"
 	"github.com/caiquetgr/go_gamereview/foundation/test"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/testcontainers/testcontainers-go/modules/compose"
-	"github.com/uptrace/bun"
 )
 
 type GameTest struct {
@@ -20,57 +16,33 @@ type GameTest struct {
 }
 
 func TestGames(t *testing.T) {
-	cfg := BuildAppConfig(context.Background(), comp)
-	web.Handlers(web.ApiConfig{
-		DB:            &bun.DB{},
-		KafkaProducer: &kafka.Producer{},
-	})
+	ctx := context.Background()
+	cfg := test.BuildAppConfig(ctx, comp)
+	it := test.NewIntegrationTest(ctx, cfg)
+
+	t.Cleanup(it.Teardown)
+
+	tests := GameTest{
+		app: web.Handlers(web.ApiConfig{
+			DB:            it.Db,
+			KafkaProducer: it.Kp,
+		}),
+	}
+
+	t.Run("GetGamesList", tests.GetGames)
 }
 
-func BuildAppConfig(ctx context.Context, comp compose.ComposeStack) config.AppConfig {
-	containers, err := test.GetContainers(ctx, comp)
-	if err != nil {
-		panic(err)
+func (g GameTest) GetGames(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/v1/games", nil)
+	w := httptest.NewRecorder()
+
+	g.app.ServeHTTP(w, r)
+
+	resp := map[string]interface{}{}
+
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("[ERROR] Failed to decode response body: %v", err)
 	}
 
-	dbContainer := containers[test.DatabaseService]
-	kafkaContainer := containers[test.KafkaService]
-
-	dbAddress := test.GetContainerAddress(ctx, dbContainer, "5432")
-	kafkaAddress := test.GetContainerAddress(ctx, kafkaContainer, "9092")
-
-	return config.AppConfig{
-		DbConfig: config.DbConfig{
-			Host:            dbAddress,
-			User:            "postgres",
-			Password:        "postgres",
-			Database:        "gamereview",
-			ApplicationName: "go_gamereview",
-		},
-		KPConfig: config.KafkaProducerConfig{
-			BootstrapServers: kafkaAddress,
-			Acks:             "all",
-		},
-		HttpServerConfig: config.HttpServerConfig{
-			Addr: HttpServerPort,
-		},
-	}
-}
-
-func TestGetGames(t *testing.T) {
-	res, err := http.Get(fmt.Sprintf("%s/v1/games", getServerUrl()))
-	if err != nil {
-		t.Log(err)
-		t.Fail()
-	}
-
-	games, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-
-	if err != nil {
-		t.Log(err)
-		t.Fail()
-	}
-
-	t.Logf("%s", games)
+	t.Logf("[INFO] Games: %v", resp)
 }

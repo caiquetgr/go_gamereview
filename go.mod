@@ -11,8 +11,10 @@ require (
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.0.2
+	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go/modules/compose v0.19.0
+	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
 )
 
 require (
@@ -37,6 +39,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/compose-spec/compose-go v1.12.0 // indirect
+	github.com/confluentinc/confluent-kafka-go v1.9.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/containerd v1.6.19 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
@@ -52,7 +55,6 @@ require (
 	github.com/docker/docker v23.0.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect

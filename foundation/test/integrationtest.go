@@ -6,15 +6,17 @@ import (
 
 	"github.com/caiquetgr/go_gamereview/cmd/api/config"
 	"github.com/caiquetgr/go_gamereview/internal/platform/database"
+	k "github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/compose"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/uptrace/bun"
-	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 const (
-	dcFile          = "../../docker-compose-test.yml"
+	dcFile          = "../../../docker-compose-test.yml"
 	DatabaseService = "db"
 	KafkaService    = "kafka"
 )
@@ -60,7 +62,37 @@ func GetContainerAddress(ctx context.Context, c testcontainers.Container, contai
 	return fmt.Sprintf("%s:%s", host, port.Port())
 }
 
-func NewIntegrationTest(cfg config.AppConfig) {
+func BuildAppConfig(ctx context.Context, comp compose.ComposeStack) config.AppConfig {
+	containers, err := GetContainers(ctx, comp)
+	if err != nil {
+		panic(err)
+	}
+
+	dbContainer := containers[DatabaseService]
+	kafkaContainer := containers[KafkaService]
+
+	dbAddress := GetContainerAddress(ctx, dbContainer, "5432")
+	kafkaAddress := GetContainerAddress(ctx, kafkaContainer, "9092")
+
+	return config.AppConfig{
+		DbConfig: config.DbConfig{
+			Host:            dbAddress,
+			User:            "postgres",
+			Password:        "postgres",
+			Database:        "gamereview",
+			ApplicationName: "go_gamereview",
+		},
+		KPConfig: config.KafkaProducerConfig{
+			BootstrapServers: kafkaAddress,
+			Acks:             "all",
+		},
+		HttpServerConfig: config.HttpServerConfig{
+			Addr: ":8080",
+		},
+	}
+}
+
+func NewIntegrationTest(ctx context.Context, cfg config.AppConfig) AppIntegrationTest {
 	db := database.OpenConnection(database.DbConfig{
 		Host:            cfg.DbConfig.Host,
 		User:            cfg.DbConfig.User,
@@ -69,10 +101,23 @@ func NewIntegrationTest(cfg config.AppConfig) {
 		ApplicationName: cfg.DbConfig.ApplicationName,
 	})
 
-  return AppIntegrationTest{
-  	Db: db,
-  	Kp: new(invalid type),
-  	Teardown: func() {
-  	},
-  }
+	err := database.Migrate(ctx, db)
+	if err != nil {
+		panic(err)
+	}
+
+	kp := k.CreateKafkaProducer(k.ProducerConfig{
+		BootstrapServers: cfg.KPConfig.BootstrapServers,
+		Acks:             cfg.KPConfig.Acks,
+	})
+
+	return AppIntegrationTest{
+		Db: db,
+		Kp: kp,
+		Teardown: func() {
+			fmt.Println("Tearing down integration test")
+			db.Close()
+			kp.Close()
+		},
+	}
 }
