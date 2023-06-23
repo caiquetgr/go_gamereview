@@ -11,6 +11,12 @@ type ProducerConfig struct {
 	Acks             string
 }
 
+type ConsumerConfig struct {
+	BootstrapServers string
+	GroupId          string
+	AutoOffsetReset  string
+}
+
 func CreateKafkaProducer(kpc ProducerConfig) *kafka.Producer {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": kpc.BootstrapServers,
@@ -36,11 +42,11 @@ func CreateKafkaProducer(kpc ProducerConfig) *kafka.Producer {
 	return p
 }
 
-func CreateKafkaConsumer() *kafka.Consumer {
+func CreateKafkaConsumer(kcc ConsumerConfig) *kafka.Consumer {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		"group.id":          "go_gamereview",
-		"auto.offset.reset": "earliest",
+		"bootstrap.servers": kcc.BootstrapServers,
+		"group.id":          kcc.GroupId,
+		"auto.offset.reset": kcc.AutoOffsetReset,
 	})
 	if err != nil {
 		panic(err)

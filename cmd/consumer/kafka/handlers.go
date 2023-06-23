@@ -10,33 +10,39 @@ import (
 	"github.com/caiquetgr/go_gamereview/internal/domain/games"
 	"github.com/caiquetgr/go_gamereview/internal/domain/games/db/gamedb"
 	"github.com/caiquetgr/go_gamereview/internal/domain/games/event"
+	k "github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/uptrace/bun"
 )
 
 const (
-	newGameTopic = "new-game-event"
+	NewGameTopic = "new-game-event"
 )
 
 type KafkaHandlerConfig struct {
 	DB                  *bun.DB
 	KafkaProducer       *kafka.Producer
-	KafkaConsumerCreate func() *kafka.Consumer
+	KafkaConsumerCreate func(kcc k.ConsumerConfig) *kafka.Consumer
 	SigChan             <-chan (os.Signal)
 }
 
 func Handle(cfg KafkaHandlerConfig) {
-	c := cfg.KafkaConsumerCreate()
+	c := cfg.KafkaConsumerCreate(k.ConsumerConfig{
+		BootstrapServers: "localhost:9092",
+		GroupId:          "go_gamereview",
+		AutoOffsetReset:  "earliest",
+	})
+
 	defer c.Close()
 
-	err := c.SubscribeTopics([]string{newGameTopic}, nil)
+	err := c.SubscribeTopics([]string{NewGameTopic}, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	gs := games.NewGameService(
 		gamedb.NewGameRepositoryBun(cfg.DB),
-		event.NewGameEventProducer(newGameTopic, cfg.KafkaProducer),
+		event.NewGameEventProducer(NewGameTopic, cfg.KafkaProducer),
 	)
 
 	run := true

@@ -27,8 +27,7 @@ type GetGamesV1Response struct {
 
 func TestGames(t *testing.T) {
 	ctx := context.Background()
-	cfg := test.BuildAppConfig(ctx, comp)
-	it := test.NewIntegrationTest(ctx, cfg)
+	it := test.NewIntegrationTest(ctx, comp)
 
 	t.Cleanup(it.Teardown)
 
@@ -92,4 +91,8 @@ func (g GameTest) GetGames(t *testing.T) {
 		assert.Equal(t, game.Genre, returnedGame.Genre, "Game Genre does not match")
 		assert.Equal(t, game.Publisher, returnedGame.Publisher, "Game Publisher does not match")
 	}
+}
+
+func (g GameTest) CreateGame(t *testing.T) {
+	// TODO
 }

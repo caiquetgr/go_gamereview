@@ -24,6 +24,7 @@ const (
 type AppIntegrationTest struct {
 	Db       *bun.DB
 	Kp       *kafka.Producer
+	Kc       *kafka.Consumer
 	Teardown func()
 }
 
@@ -92,7 +93,9 @@ func BuildAppConfig(ctx context.Context, comp compose.ComposeStack) config.AppCo
 	}
 }
 
-func NewIntegrationTest(ctx context.Context, cfg config.AppConfig) AppIntegrationTest {
+func NewIntegrationTest(ctx context.Context, comp compose.ComposeStack) AppIntegrationTest {
+	cfg := BuildAppConfig(ctx, comp)
+
 	db := database.OpenConnection(database.DbConfig{
 		Host:            cfg.DbConfig.Host,
 		User:            cfg.DbConfig.User,
@@ -111,9 +114,16 @@ func NewIntegrationTest(ctx context.Context, cfg config.AppConfig) AppIntegratio
 		Acks:             cfg.KPConfig.Acks,
 	})
 
+	kc := k.CreateKafkaConsumer(k.ConsumerConfig{
+		BootstrapServers: "localhost:9092",
+		GroupId:          "go_gamereview",
+		AutoOffsetReset:  "earliest",
+	})
+
 	return AppIntegrationTest{
 		Db: db,
 		Kp: kp,
+		Kc: kc,
 		Teardown: func() {
 			fmt.Println("Tearing down integration test")
 			db.Close()
