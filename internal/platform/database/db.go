@@ -80,3 +80,21 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 
 	return nil
 }
+
+func Rollback(ctx context.Context, db *bun.DB) error {
+	migrations := migrate.NewMigrations()
+	err := migrations.Discover(sqlMigrations)
+	if err != nil {
+		return err
+	}
+
+	migrator := migrate.NewMigrator(db, migrations)
+	migrator.Init(ctx)
+
+	migrator.Lock(ctx)
+	defer migrator.Unlock(ctx)
+
+	_, err = migrator.Rollback(ctx)
+
+	return err
+}
