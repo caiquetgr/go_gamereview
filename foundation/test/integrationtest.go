@@ -128,6 +128,7 @@ func NewIntegrationTest(ctx context.Context, comp compose.ComposeStack) AppInteg
 			fmt.Println("Tearing down integration test")
 			db.Close()
 			kp.Close()
+			kc.Close()
 		},
 	}
 }

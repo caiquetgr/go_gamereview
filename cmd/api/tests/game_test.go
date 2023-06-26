@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -12,12 +13,16 @@ import (
 	"github.com/caiquetgr/go_gamereview/internal/domain/games"
 	"github.com/caiquetgr/go_gamereview/internal/domain/games/db/gamedb"
 	"github.com/caiquetgr/go_gamereview/internal/domain/games/event"
+	"github.com/caiquetgr/go_gamereview/internal/platform/database"
+	"github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 
 type GameTest struct {
 	app http.Handler
 	gs  games.GameService
+	it  test.AppIntegrationTest
 }
 
 type GetGamesV1Response struct {
@@ -40,9 +45,28 @@ func TestGames(t *testing.T) {
 			gamedb.NewGameRepositoryBun(it.Db),
 			event.NewGameEventProducer("new-game-event", it.Kp),
 		),
+		it: it,
 	}
 
-	t.Run("GetGamesList", tests.GetGames)
+	gameTests := map[string]func(t *testing.T){
+		"GetGamesList": tests.GetGames,
+		"CreateGame":   tests.CreateGame,
+	}
+
+	for k, v := range gameTests {
+		tests.BeforeRun()
+		t.Run(k, v)
+	}
+}
+
+func (g GameTest) BeforeRun() {
+	g.CleanDatabase()
+}
+
+func (g GameTest) CleanDatabase() {
+	ctx := context.Background()
+	_ = database.Rollback(ctx, g.it.Db)
+	_ = database.Migrate(ctx, g.it.Db)
 }
 
 func (g GameTest) GetGames(t *testing.T) {
@@ -94,5 +118,41 @@ func (g GameTest) GetGames(t *testing.T) {
 }
 
 func (g GameTest) CreateGame(t *testing.T) {
-	// TODO
+	game := games.NewGame{
+		Name:      "Super Ghouls'n Ghosts",
+		Year:      1991,
+		Platform:  "Super Nintendo",
+		Genre:     "Platform",
+		Publisher: "Capcom",
+	}
+
+	rb, err := json.Marshal(game)
+	if err != nil {
+		t.Errorf("unable to marshal game: %v", err)
+	}
+
+	t.Log("\t Given a new game creation request")
+	{
+		r := httptest.NewRequest(http.MethodPost, "/v1/games", bytes.NewReader(rb))
+		w := httptest.NewRecorder()
+		g.app.ServeHTTP(w, r)
+
+		assert.Equal(t, http.StatusAccepted, w.Result().StatusCode, "Game POST did not returned 202")
+	}
+
+	t.Log("\t Should have posted a new game event equal to game request")
+	{
+		value, err := kafka.ConsumeSingleMessage(g.it.Kc, "new-game-event")
+		if err != nil {
+			t.Fatalf("[ERROR] Failed consuming kafka message: %v", err)
+		}
+
+		ng := &games.NewGame{}
+
+		if err := json.Unmarshal(value, ng); err != nil {
+			t.Fatalf("[ERROR] Failed unmarshalling kafka message: %v", err)
+		}
+
+		assert.True(t, cmp.Equal(game, *ng), "New game event is not equal to game request")
+	}
 }
