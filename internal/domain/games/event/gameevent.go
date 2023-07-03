@@ -30,6 +30,7 @@ func (ge GameEventProducer) CreateGameEvent(ctx context.Context, ng games.NewGam
 	eventCh := make(chan kafka.Event)
 	defer close(eventCh)
 
+	// TODO: refactor to a util to send message
 	err = ge.p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &ge.topic,

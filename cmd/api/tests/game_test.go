@@ -49,8 +49,8 @@ func TestGames(t *testing.T) {
 	}
 
 	gameTests := map[string]func(t *testing.T){
-		"GetGamesList": tests.GetGames,
-		"CreateGame":   tests.CreateGame,
+		"GetGamesList": tests.TestGetGamesList,
+		"CreateGame":   tests.TestCreateGameAsync,
 	}
 
 	for k, v := range gameTests {
@@ -69,7 +69,7 @@ func (g GameTest) CleanDatabase() {
 	_ = database.Migrate(ctx, g.it.Db)
 }
 
-func (g GameTest) GetGames(t *testing.T) {
+func (g GameTest) TestGetGamesList(t *testing.T) {
 	game := games.NewGame{
 		Name:      "Super Ghouls'n Ghosts",
 		Year:      1991,
@@ -117,7 +117,7 @@ func (g GameTest) GetGames(t *testing.T) {
 	}
 }
 
-func (g GameTest) CreateGame(t *testing.T) {
+func (g GameTest) TestCreateGameAsync(t *testing.T) {
 	game := games.NewGame{
 		Name:      "Super Ghouls'n Ghosts",
 		Year:      1991,

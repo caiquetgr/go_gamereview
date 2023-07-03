@@ -9,6 +9,7 @@ import (
 type Repository interface {
 	FindAll(ctx context.Context, page int, pageSize int) ([]Game, bool, error)
 	Create(ctx context.Context, g *Game) (*Game, error)
+	FindByName(ctx context.Context, name string) (Game, error)
 }
 
 type EventProducer interface {

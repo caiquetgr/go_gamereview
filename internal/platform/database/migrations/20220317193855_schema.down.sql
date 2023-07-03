@@ -1,1 +1,2 @@
-DROP TABLE IF EXISTS games
+DROP TABLE IF EXISTS games;
+DROP INDEX IF EXISTS index_game_name;

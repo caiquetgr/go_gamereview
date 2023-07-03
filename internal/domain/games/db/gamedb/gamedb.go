@@ -25,7 +25,6 @@ func (gr GameRepositoryBun) FindAll(ctx context.Context, page int, pageSize int)
 		Limit(pageSize + 1).
 		Offset(pageSize * (page - 1)).
 		Scan(ctx)
-
 	if err != nil {
 		return nil, false, fmt.Errorf("error finding games: %w", err)
 	}
@@ -41,10 +40,16 @@ func (gr GameRepositoryBun) FindAll(ctx context.Context, page int, pageSize int)
 
 func (gr GameRepositoryBun) Create(ctx context.Context, g *games.Game) (*games.Game, error) {
 	_, err := gr.db.NewInsert().Model(g).Exec(ctx)
-
 	if err != nil {
 		return nil, err
 	}
 
 	return g, nil
+}
+
+func (gr GameRepositoryBun) FindByName(ctx context.Context, name string) (games.Game, error) {
+	g := &GameDbModel{}
+	err := gr.db.NewSelect().
+		Table("games").
+		Where("name = ?", name).Scan(ctx, g)
 }

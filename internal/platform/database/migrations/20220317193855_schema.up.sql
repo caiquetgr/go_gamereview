@@ -10,3 +10,4 @@ CREATE TABLE games (
     PRIMARY KEY (id)
 );
 
+CREATE INDEX index_game_name ON games;
