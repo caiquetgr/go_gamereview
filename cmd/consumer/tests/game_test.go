@@ -13,6 +13,7 @@ import (
 	"github.com/caiquetgr/go_gamereview/internal/domain/games/db/gamedb"
 	"github.com/caiquetgr/go_gamereview/internal/platform/database"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/stretchr/testify/assert"
 )
 
 type GameTest struct {
@@ -77,46 +78,60 @@ func (g GameTest) TestCreateGame(t *testing.T) {
 		Genre:     "Platform",
 		Publisher: "Capcom",
 	}
-	bytes, err := json.Marshal(ng)
-	if err != nil {
-		t.Fatalf("[ERROR] Could not marshal new game to json: %v", err)
-	}
 
-	eventCh := make(chan kafka.Event)
-	defer close(eventCh)
-
-	err = kp.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &topic,
-			Partition: kafka.PartitionAny,
-		},
-		Value: bytes,
-	}, eventCh)
-
-	if err != nil {
-		t.Fatalf("[ERROR] Failed to produce event: %v", err)
-	}
-
-	m := (<-eventCh).(*kafka.Message)
-
-	if m.TopicPartition.Error != nil {
-		t.Fatalf("[ERROR] Failed to deliver message: %v", m.TopicPartition.Error.Error())
-	}
-
-	f := func() bool {
-		game, err := g.r.FindByName(ctx, "Super Ghouls'n Ghosts")
+	t.Log("Given a new game event")
+	{
+		bytes, err := json.Marshal(ng)
 		if err != nil {
-			t.Logf("[ERROR] Error finding game by name: %v", err)
+			t.Fatalf("[ERROR] Could not marshal new game to json: %v", err)
 		}
-		return game.Name != ""
+
+		eventCh := make(chan kafka.Event)
+		defer close(eventCh)
+
+		err = kp.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{
+				Topic:     &topic,
+				Partition: kafka.PartitionAny,
+			},
+			Value: bytes,
+		}, eventCh)
+
+		if err != nil {
+			t.Fatalf("[ERROR] Failed to produce event: %v", err)
+		}
+
+		m := (<-eventCh).(*kafka.Message)
+
+		if m.TopicPartition.Error != nil {
+			t.Fatalf("[ERROR] Failed to deliver message: %v", m.TopicPartition.Error.Error())
+		}
 	}
 
-	success, err := test.WaitUntil(f, 5*time.Second)
+	t.Log("Should create a game successfully")
+	{
+		f := func() bool {
+			game, err := g.r.FindByName(ctx, ng.Name)
+			if err != nil {
+				return false
+			}
+			return game.Name != ""
+		}
 
-	if !success || err != nil {
-		t.Fatalf("[ERROR] Couldn't find the game to continue the test: success=%v, err=%v", success, err)
+		success, err := test.WaitUntil(f, 5*time.Second)
+
+		if !success || err != nil {
+			t.Fatalf("[ERROR] Couldn't find the game to continue the test: success=%v, err=%v", success, err)
+		}
 	}
 
-	game, _ := g.r.FindByName(ctx, "Super Ghouls'n Ghosts")
-	t.Logf("game=%v", game)
+	t.Log("And match the game event")
+	{
+		game, _ := g.r.FindByName(ctx, "Super Ghouls'n Ghosts")
+		assert.Equal(t, ng.Name, game.Name, "Game Name does not match")
+		assert.Equal(t, ng.Year, game.Year, "Game Year does not match")
+		assert.Equal(t, ng.Platform, game.Platform, "Game Platform does not match")
+		assert.Equal(t, ng.Genre, game.Genre, "Game Genre does not match")
+		assert.Equal(t, ng.Publisher, game.Publisher, "Game Publisher does not match")
+	}
 }
