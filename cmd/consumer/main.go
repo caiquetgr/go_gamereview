@@ -44,5 +44,6 @@ func main() {
 		KafkaProducer:       kp,
 		KafkaConsumerCreate: kcCreator,
 		SigChan:             sigchan,
+		StopChan:            make(chan struct{}),
 	})
 }

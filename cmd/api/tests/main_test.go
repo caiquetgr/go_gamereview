@@ -14,7 +14,7 @@ var comp compose.ComposeStack
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 	var err error
-	comp, err = test.InitDependencies(ctx)
+	comp, err = test.InitDependencies(ctx, "../../../docker-compose-test.yml")
 
 	if err != nil {
 		panic(err)

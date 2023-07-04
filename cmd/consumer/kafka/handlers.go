@@ -24,6 +24,7 @@ type KafkaHandlerConfig struct {
 	KafkaProducer       *kafka.Producer
 	KafkaConsumerCreate func(kcc k.ConsumerConfig) *kafka.Consumer
 	SigChan             <-chan (os.Signal)
+	StopChan            <-chan (struct{})
 }
 
 func Handle(cfg KafkaHandlerConfig) {
@@ -53,6 +54,9 @@ func Handle(cfg KafkaHandlerConfig) {
 		select {
 		case sig := <-cfg.SigChan:
 			log.Println("stopping kafka listener with signal:", sig)
+			run = false
+		case <-cfg.StopChan:
+			log.Println("stopping kafka listener with stop channel read")
 			run = false
 		default:
 			ev := c.Poll(100)

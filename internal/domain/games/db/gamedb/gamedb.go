@@ -51,5 +51,10 @@ func (gr GameRepositoryBun) FindByName(ctx context.Context, name string) (games.
 	g := &GameDbModel{}
 	err := gr.db.NewSelect().
 		Table("games").
-		Where("name = ?", name).Scan(ctx, g)
+		Where("name = ?", name).
+		Scan(ctx, g)
+	if err != nil {
+		return games.Game{}, err
+	}
+	return toGame(*g), err
 }

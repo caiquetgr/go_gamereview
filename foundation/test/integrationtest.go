@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/caiquetgr/go_gamereview/cmd/api/config"
 	"github.com/caiquetgr/go_gamereview/internal/platform/database"
@@ -22,14 +23,15 @@ const (
 )
 
 type AppIntegrationTest struct {
-	Db       *bun.DB
-	Kp       *kafka.Producer
-	Kc       *kafka.Consumer
-	Teardown func()
+	Db        *bun.DB
+	Kp        *kafka.Producer
+	Kc        *kafka.Consumer
+	KcCreator func(kcc k.ConsumerConfig) *kafka.Consumer
+	Teardown  func()
 }
 
-func InitDependencies(ctx context.Context) (tc.ComposeStack, error) {
-	comp, err := tc.NewDockerCompose(dcFile)
+func InitDependencies(ctx context.Context, composeFile string) (tc.ComposeStack, error) {
+	comp, err := tc.NewDockerCompose(composeFile)
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +123,33 @@ func NewIntegrationTest(ctx context.Context, comp compose.ComposeStack) AppInteg
 	})
 
 	return AppIntegrationTest{
-		Db: db,
-		Kp: kp,
-		Kc: kc,
+		Db:        db,
+		Kp:        kp,
+		Kc:        kc,
+		KcCreator: k.CreateKafkaConsumer,
 		Teardown: func() {
 			fmt.Println("Tearing down integration test")
 			db.Close()
 			kp.Close()
 			kc.Close()
 		},
+	}
+}
+
+func WaitUntil(f func() bool, timeout time.Duration) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	defer cancel()
+
+	for {
+		select {
+		case <-ticker.C:
+			if f() {
+				return true, nil
+			}
+		case <-ctx.Done():
+			return false, fmt.Errorf("timed out waiting until func return true")
+		}
 	}
 }
