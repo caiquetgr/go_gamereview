@@ -32,7 +32,7 @@ type GetGamesV1Response struct {
 
 func TestGames(t *testing.T) {
 	ctx := context.Background()
-	it := test.NewIntegrationTest(ctx, comp)
+	it := test.NewIntegrationTest(ctx)
 
 	t.Cleanup(it.Teardown)
 
@@ -71,11 +71,11 @@ func (g GameTest) CleanDatabase() {
 
 func (g GameTest) TestGetGamesList(t *testing.T) {
 	game := games.NewGame{
-		Name:      "Super Ghouls'n Ghosts",
-		Year:      1991,
+		Name:      "Donkey Kong Country 2: Diddy's Kong Quest",
+		Year:      1995,
 		Platform:  "Super Nintendo",
 		Genre:     "Platform",
-		Publisher: "Capcom",
+		Publisher: "Nintendo",
 	}
 
 	t.Log("\t Given a created game in database")
@@ -119,11 +119,11 @@ func (g GameTest) TestGetGamesList(t *testing.T) {
 
 func (g GameTest) TestCreateGameAsync(t *testing.T) {
 	game := games.NewGame{
-		Name:      "Super Ghouls'n Ghosts",
-		Year:      1991,
+		Name:      "Donkey Kong Country 2: Diddy's Kong Quest",
+		Year:      1995,
 		Platform:  "Super Nintendo",
 		Genre:     "Platform",
-		Publisher: "Capcom",
+		Publisher: "Nintendo",
 	}
 
 	rb, err := json.Marshal(game)

@@ -23,16 +23,12 @@ type GameTest struct {
 
 func TestGames(t *testing.T) {
 	ctx := context.Background()
-	it := test.NewIntegrationTest(ctx, comp)
+	it := test.NewIntegrationTest(ctx)
 	t.Cleanup(it.Teardown)
 
 	gt := GameTest{
 		it: it,
 		r:  gamedb.NewGameRepositoryBun(it.Db),
-	}
-
-	tests := map[string]func(*testing.T){
-		"TestCreateGame": gt.TestCreateGame,
 	}
 
 	sigChan := make(chan os.Signal, 1)
@@ -48,6 +44,10 @@ func TestGames(t *testing.T) {
 		SigChan:             sigChan,
 		StopChan:            stopChan,
 	})
+
+	tests := map[string]func(*testing.T){
+		"TestCreateGame": gt.TestCreateGame,
+	}
 
 	for k, v := range tests {
 		gt.BeforeRun()

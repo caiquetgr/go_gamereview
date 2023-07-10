@@ -31,7 +31,7 @@ func Handle(cfg KafkaHandlerConfig) {
 	c := cfg.KafkaConsumerCreate(k.ConsumerConfig{
 		BootstrapServers: "localhost:9092",
 		GroupId:          "go_gamereview",
-		AutoOffsetReset:  "earliest",
+		AutoOffsetReset:  "latest",
 	})
 
 	defer c.Close()
@@ -68,7 +68,6 @@ func Handle(cfg KafkaHandlerConfig) {
 			case *kafka.Message:
 				log.Printf("-- Message on %s: %s\n", e.TopicPartition, string(e.Value))
 				log.Printf("-- Headers: %s\n", e.Headers)
-
 				ng := &games.NewGame{}
 
 				if err := json.Unmarshal(e.Value, ng); err != nil {
@@ -77,11 +76,19 @@ func Handle(cfg KafkaHandlerConfig) {
 				}
 
 				game, err := gs.CreateGame(context.Background(), *ng)
+
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error creating game: %v", err)
 				} else {
 					log.Println("created game", game)
 				}
+
+				_, err = c.CommitMessage(e)
+
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error commiting message: %v", err)
+				}
+
 			case kafka.Error:
 				fmt.Fprintf(os.Stderr, "kafka error: %v: %v\n", e.Code(), e)
 				if e.Code() == kafka.ErrAllBrokersDown {

@@ -3,23 +3,14 @@ package test
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/caiquetgr/go_gamereview/cmd/api/config"
 	"github.com/caiquetgr/go_gamereview/internal/platform/database"
 	k "github.com/caiquetgr/go_gamereview/internal/platform/events/kafka"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/compose"
-	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/uptrace/bun"
-)
-
-const (
-	dcFile          = "../../../docker-compose-test.yml"
-	DatabaseService = "db"
-	KafkaService    = "kafka"
 )
 
 type AppIntegrationTest struct {
@@ -30,63 +21,17 @@ type AppIntegrationTest struct {
 	Teardown  func()
 }
 
-func InitDependencies(ctx context.Context, composeFile string) (tc.ComposeStack, error) {
-	comp, err := tc.NewDockerCompose(composeFile)
-	if err != nil {
-		return nil, err
-	}
-
-	err = comp.Up(ctx, tc.Wait(true))
-	if err != nil {
-		return nil, err
-	}
-
-	return comp, nil
-}
-
-func GetContainers(ctx context.Context, comp tc.ComposeStack) (map[string]*testcontainers.DockerContainer, error) {
-	services := comp.Services()
-	containers := make(map[string]*testcontainers.DockerContainer)
-
-	for _, s := range services {
-		c, err := comp.ServiceContainer(ctx, s)
-		if err != nil {
-			return nil, err
-		}
-		containers[s] = c
-	}
-
-	return containers, nil
-}
-
-func GetContainerAddress(ctx context.Context, c testcontainers.Container, containerPort string) string {
-	host, _ := c.Host(ctx)
-	port, _ := c.MappedPort(ctx, nat.Port(containerPort))
-	return fmt.Sprintf("%s:%s", host, port.Port())
-}
-
-func BuildAppConfig(ctx context.Context, comp compose.ComposeStack) config.AppConfig {
-	containers, err := GetContainers(ctx, comp)
-	if err != nil {
-		panic(err)
-	}
-
-	dbContainer := containers[DatabaseService]
-	kafkaContainer := containers[KafkaService]
-
-	dbAddress := GetContainerAddress(ctx, dbContainer, "5432")
-	kafkaAddress := GetContainerAddress(ctx, kafkaContainer, "9092")
-
+func BuildAppConfig(ctx context.Context) config.AppConfig {
 	return config.AppConfig{
 		DbConfig: config.DbConfig{
-			Host:            dbAddress,
+			Host:            "localhost:5432",
 			User:            "postgres",
 			Password:        "postgres",
 			Database:        "gamereview",
 			ApplicationName: "go_gamereview",
 		},
 		KPConfig: config.KafkaProducerConfig{
-			BootstrapServers: kafkaAddress,
+			BootstrapServers: "localhost:9092",
 			Acks:             "all",
 		},
 		HttpServerConfig: config.HttpServerConfig{
@@ -95,8 +40,8 @@ func BuildAppConfig(ctx context.Context, comp compose.ComposeStack) config.AppCo
 	}
 }
 
-func NewIntegrationTest(ctx context.Context, comp compose.ComposeStack) AppIntegrationTest {
-	cfg := BuildAppConfig(ctx, comp)
+func NewIntegrationTest(ctx context.Context) AppIntegrationTest {
+	cfg := BuildAppConfig(ctx)
 
 	db := database.OpenConnection(database.DbConfig{
 		Host:            cfg.DbConfig.Host,
@@ -117,7 +62,7 @@ func NewIntegrationTest(ctx context.Context, comp compose.ComposeStack) AppInteg
 	})
 
 	kc := k.CreateKafkaConsumer(k.ConsumerConfig{
-		BootstrapServers: "localhost:9092",
+		BootstrapServers: cfg.KPConfig.BootstrapServers,
 		GroupId:          "go_gamereview",
 		AutoOffsetReset:  "earliest",
 	})
@@ -145,10 +90,12 @@ func WaitUntil(f func() bool, timeout time.Duration) (bool, error) {
 	for {
 		select {
 		case <-ticker.C:
+			log.Printf("trying to find")
 			if f() {
 				return true, nil
 			}
 		case <-ctx.Done():
+			log.Printf("timeout")
 			return false, fmt.Errorf("timed out waiting until func return true")
 		}
 	}
