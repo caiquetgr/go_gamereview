@@ -34,15 +34,13 @@ func main() {
 	})
 	defer kp.Close()
 
-	kcCreator := kafkafactory.CreateKafkaConsumer
-
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
 	kafka.Handle(kafka.KafkaHandlerConfig{
 		DB:                  db,
 		KafkaProducer:       kp,
-		KafkaConsumerCreate: kcCreator,
+		KafkaConsumerCreate: kafkafactory.CreateKafkaConsumer,
 		SigChan:             sigchan,
 		StopChan:            make(chan struct{}),
 	})

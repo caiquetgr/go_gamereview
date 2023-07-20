@@ -44,9 +44,12 @@ func CreateKafkaProducer(kpc ProducerConfig) *kafka.Producer {
 
 func CreateKafkaConsumer(kcc ConsumerConfig) *kafka.Consumer {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": kcc.BootstrapServers,
-		"group.id":          kcc.GroupId,
-		"auto.offset.reset": kcc.AutoOffsetReset,
+		"bootstrap.servers":        kcc.BootstrapServers,
+		"group.id":                 kcc.GroupId,
+		"auto.offset.reset":        kcc.AutoOffsetReset,
+		"enable.auto.offset.store": false,
+		"enable.auto.commit":       false,
+		"broker.address.family":    "v4",
 	})
 	if err != nil {
 		panic(err)
